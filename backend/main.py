@@ -13,7 +13,7 @@ from flask_cors import CORS
 
 # ================================ CONFIG ================================= #
 API_KEY = "AIzaSyBBYqOX_7fyedm2Yj8MoN6jBeKbOhUCvPM"
-IMAGE_DIR = r"C:\Users\pc\OneDrive\Documents\OneDrive\Masaüstü\pawmatesGP\data\archive (1)\images"
+IMAGE_DIR = r"C:\Users\SARA\OneDrive - Manisa Celal Bayar Üniversitesi\Masaüstü\Pawmate\data\archive (1)\images"
 # Sırayla deneyecek model listesi (en hızlıdan başlayarak)
 MODEL_NAMES = [
     "models/gemini-2.5-flash",           # En hızlı ve yeni
@@ -169,7 +169,7 @@ def predict_breed_process(temp_img_path, user_data):
 
 # ============================= FLASK API ================================== #
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/', methods=['GET'])
 def home():
@@ -211,5 +211,5 @@ def analyze():
 
 # 👇 EN ÖNEMLİ EKSİK PARÇA BUYDU 👇
 if __name__ == "__main__":
-    print("\n🚀 Sunucu hazır: http://localhost:5000")
-    app.run(debug=True, port=5000)
+    print("\n🚀 Sunucu hazır: http://0.0.0.0:5000")
+    app.run(debug=True, host='0.0.0.0', port=5000)
