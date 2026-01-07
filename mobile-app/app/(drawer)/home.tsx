@@ -41,7 +41,8 @@ import {
   Save,
   Trash2,
   LogOut,
-  CircleCheckBig as CheckCircle2
+  CircleCheckBig as CheckCircle2,
+  FileText
 } from 'lucide-react-native';
 
 // --- Constants & Config ---
@@ -105,7 +106,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   // State
-  const [view, setView] = useState<'home' | 'pets' | 'compatibility' | 'notes' | 'settings' | 'result' | 'analysis'>('home');
+  const [view, setView] = useState<'home' | 'pets' | 'compatibility' | 'notes' | 'settings' | 'result' | 'analysis' | 'form'>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [userInput, setUserInput] = useState('');
@@ -269,6 +270,7 @@ export default function HomeScreen() {
                 { id: 'home', label: 'Ana Panel', icon: LayoutGrid },
                 { id: 'pets', label: 'Hayvanlarım', icon: Dog },
                 { id: 'compatibility', label: 'Uyum Analizi', icon: Users },
+                { id: 'form', label: 'Kayıt Formu', icon: FileText },
                 { id: 'notes', label: 'Gelişim Notları', icon: ClipboardList },
                 { id: 'settings', label: 'Profil Ayarları', icon: Settings },
               ].map((item) => (
@@ -557,11 +559,84 @@ export default function HomeScreen() {
             </View>
           )}
 
+          {/* FORM VIEW */}
+          {view === 'form' && (
+            <View>
+              <Text style={styles.sectionTitle}>Evcil Hayvan Kaydı</Text>
+              <Text style={styles.sectionDesc}>Yeni bir dostunuzun profilini oluşturun.</Text>
+
+              <View style={styles.compInputCard}>
+                <Text style={styles.inputLabel}>AD & CİNS</Text>
+                <View style={{ gap: 16 }}>
+                  <View style={styles.compInputRow}>
+                    <View style={styles.compIconBox}><Dog size={18} color={colors.stone400} /></View>
+                    <TextInput style={styles.compInput} placeholder="Evcil Hayvanın Adı" />
+                  </View>
+                  <View style={styles.compInputRow}>
+                    <View style={styles.compIconBox}><Sparkles size={18} color={colors.stone400} /></View>
+                    <TextInput style={styles.compInput} placeholder="Cinsi (Örn: Golden)" />
+                  </View>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 16, marginTop: 16 }}>
+                <View style={[styles.compInputCard, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>CİNSİYET</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                    <TouchableOpacity style={{ flex: 1, padding: 12, backgroundColor: colors.stone100, borderRadius: 12, alignItems: 'center' }}>
+                      <Text style={{ fontWeight: 'bold', color: colors.stone800 }}>Dişi</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{ flex: 1, padding: 12, backgroundColor: colors.stone50, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.stone200 }}>
+                      <Text style={{ fontWeight: 'bold', color: colors.stone400 }}>Erkek</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={[styles.compInputCard, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>YAŞ</Text>
+                  <View style={styles.compInputRow}>
+                    <TextInput style={styles.compInput} placeholder="0" keyboardType="numeric" />
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: colors.stone400 }}>YAŞ</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 16, marginTop: 16 }}>
+                <View style={[styles.compInputCard, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>KİLO</Text>
+                  <View style={styles.compInputRow}>
+                    <TextInput style={styles.compInput} placeholder="0.0" keyboardType="numeric" />
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: colors.stone400 }}>KG</Text>
+                  </View>
+                </View>
+                <View style={[styles.compInputCard, { flex: 1 }]}>
+                  <Text style={styles.inputLabel}>SON AŞI</Text>
+                  <View style={styles.compInputRow}>
+                    <TextInput style={styles.compInput} placeholder="Tarih" />
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.compInputCard, { marginTop: 16 }]}>
+                <Text style={styles.inputLabel}>VETERİNER KAYDI / NOTLAR</Text>
+                <TextInput
+                  style={[styles.compInput, { height: 80, textAlignVertical: 'top' }]}
+                  multiline
+                  placeholder="Herhangi bir sağlık sorunu veya not..."
+                />
+              </View>
+
+              <TouchableOpacity style={[styles.analyzeBtn, { marginTop: 24 }]} onPress={() => { Alert.alert("Başarılı", "Kayıt oluşturuldu!"); setView('pets'); }}>
+                <Text style={styles.analyzeBtnText}>Kaydı Tamamla</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
         </ScrollView>
-      </View>
+      </View >
 
       {/* --- BOTTOM NAV --- */}
-      <View style={[styles.bottomNav, { paddingBottom: insets.bottom + 10 }]}>
+      < View style={[styles.bottomNav, { paddingBottom: insets.bottom + 10 }]} >
         <TouchableOpacity style={styles.navItem} onPress={() => setView('home')}>
           <LayoutGrid size={24} color={view === 'home' ? colors.stone900 : colors.stone300} strokeWidth={view === 'home' ? 3 : 2} />
           <Text style={[styles.navText, view === 'home' && styles.navTextActive]}>AKIŞ</Text>
@@ -575,9 +650,9 @@ export default function HomeScreen() {
           <ClipboardList size={24} color={view === 'notes' ? colors.stone900 : colors.stone300} strokeWidth={view === 'notes' ? 3 : 2} />
           <Text style={[styles.navText, view === 'notes' && styles.navTextActive]}>NOTLAR</Text>
         </TouchableOpacity>
-      </View>
+      </View >
 
-    </View>
+    </View >
   );
 }
 
