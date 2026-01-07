@@ -1,0 +1,6 @@
+numpy
+tensorflow
+google-generativeai
+flask
+flask-cors
+pillow

@@ -143,60 +143,65 @@ export default function LoginScreen() {
             style={styles.container}
         >
             <StatusBar style="dark" />
-
-            <View style={styles.headerContainer}>
-                <Text style={styles.appName}>🐾 Pawmate</Text>
-                <Text style={styles.tagline}>Dostlarınızı daha iyi tanıyın</Text>
-            </View>
-
-            <View style={styles.formContainer}>
-                <Text style={styles.welcomeText}>Hoş Geldiniz!</Text>
-                <Text style={styles.subText}>Devam etmek için giriş yapın</Text>
-
-                <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>E-Posta</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="ornek@email.com"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
+            <ScrollView
+                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
+                <View style={styles.headerContainer}>
+                    <Text style={styles.appName}>🐾 Pawmate</Text>
+                    <Text style={styles.tagline}>Dostlarınızı daha iyi tanıyın</Text>
                 </View>
 
-                <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Şifre</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="******"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
-                </View>
+                <View style={styles.formContainer}>
+                    <Text style={styles.welcomeText}>Hoş Geldiniz!</Text>
+                    <Text style={styles.subText}>Devam etmek için giriş yapın</Text>
 
-                <TouchableOpacity style={styles.forgotButton} onPress={() => setForgotModalVisible(true)}>
-                    <Text style={styles.forgotText}>Şifremi Unuttum?</Text>
-                </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>E-Posta</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="ornek@email.com"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                    </View>
 
-                <TouchableOpacity
-                    style={styles.loginButton}
-                    onPress={handleLogin}
-                    disabled={loading}
-                >
-                    <Text style={styles.loginButtonText}>
-                        {loading ? 'Giriş Yapılıyor...' : 'GİRİŞ YAP'}
-                    </Text>
-                </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Şifre</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="******"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+                    </View>
 
-                <View style={styles.signupContainer}>
-                    <Text style={styles.signupText}>Hesabınız yok mu? </Text>
-                    <TouchableOpacity onPress={() => setSignupModalVisible(true)}>
-                        <Text style={styles.signupLink}>Kayıt Ol</Text>
+                    <TouchableOpacity style={styles.forgotButton} onPress={() => setForgotModalVisible(true)}>
+                        <Text style={styles.forgotText}>Şifremi Unuttum?</Text>
                     </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.loginButton}
+                        onPress={handleLogin}
+                        disabled={loading}
+                    >
+                        <Text style={styles.loginButtonText}>
+                            {loading ? 'Giriş Yapılıyor...' : 'GİRİŞ YAP'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.signupContainer}>
+                        <Text style={styles.signupText}>Hesabınız yok mu? </Text>
+                        <TouchableOpacity onPress={() => setSignupModalVisible(true)}>
+                            <Text style={styles.signupLink}>Kayıt Ol</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+            </ScrollView>
 
             {/* Şifremi Unuttum Modal */}
             <Modal
