@@ -7,67 +7,42 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import Markdown from 'react-native-markdown-display';
+import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 
-// --- Lucide Icons (Deep Import Fix) ---
-// @ts-ignore
-import Camera from 'lucide-react-native/dist/cjs/icons/camera';
-// @ts-ignore
-import Dog from 'lucide-react-native/dist/cjs/icons/dog';
-// @ts-ignore
-import Heart from 'lucide-react-native/dist/cjs/icons/heart';
-// @ts-ignore
-import LayoutGrid from 'lucide-react-native/dist/cjs/icons/layout-grid';
-// @ts-ignore
-import User from 'lucide-react-native/dist/cjs/icons/user';
-// @ts-ignore
-import ArrowRight from 'lucide-react-native/dist/cjs/icons/arrow-right';
-// @ts-ignore
-import Activity from 'lucide-react-native/dist/cjs/icons/activity';
-// @ts-ignore
-import Shield from 'lucide-react-native/dist/cjs/icons/shield';
-// @ts-ignore
-import Info from 'lucide-react-native/dist/cjs/icons/info';
-// @ts-ignore
-import Bell from 'lucide-react-native/dist/cjs/icons/bell';
-// @ts-ignore
-import Search from 'lucide-react-native/dist/cjs/icons/search';
-// @ts-ignore
-import Settings from 'lucide-react-native/dist/cjs/icons/settings';
-// @ts-ignore
-import Send from 'lucide-react-native/dist/cjs/icons/send';
-// @ts-ignore
-import Loader2 from 'lucide-react-native/dist/cjs/icons/loader-circle';
-// @ts-ignore
-import MessageSquare from 'lucide-react-native/dist/cjs/icons/message-square';
-// @ts-ignore
-import ChevronLeft from 'lucide-react-native/dist/cjs/icons/chevron-left';
-// @ts-ignore
-import X from 'lucide-react-native/dist/cjs/icons/x';
-// @ts-ignore
-import Bone from 'lucide-react-native/dist/cjs/icons/bone';
-// @ts-ignore
-import Sparkles from 'lucide-react-native/dist/cjs/icons/sparkles';
-// @ts-ignore
-import Lightbulb from 'lucide-react-native/dist/cjs/icons/lightbulb';
-// @ts-ignore
-import Calendar from 'lucide-react-native/dist/cjs/icons/calendar';
-// @ts-ignore
-import Plus from 'lucide-react-native/dist/cjs/icons/plus';
-// @ts-ignore
-import MenuIcon from 'lucide-react-native/dist/cjs/icons/menu';
-// @ts-ignore
-import ClipboardList from 'lucide-react-native/dist/cjs/icons/clipboard-list';
-// @ts-ignore
-import Users from 'lucide-react-native/dist/cjs/icons/users';
-// @ts-ignore
-import Save from 'lucide-react-native/dist/cjs/icons/save';
-// @ts-ignore
-import Trash2 from 'lucide-react-native/dist/cjs/icons/trash-2';
-// @ts-ignore
-import LogOut from 'lucide-react-native/dist/cjs/icons/log-out';
-// @ts-ignore
-import CheckCircle2 from 'lucide-react-native/dist/cjs/icons/circle-check-big';
+// --- Lucide Icons (Standard Import) ---
+import {
+  Camera,
+  Dog,
+  Heart,
+  LayoutGrid,
+  User,
+  ArrowRight,
+  Activity,
+  Shield,
+  Info,
+  Bell,
+  Search,
+  Settings,
+  Send,
+  LoaderCircle as Loader2,
+  MessageSquare,
+  ChevronLeft,
+  X,
+  Bone,
+  Sparkles,
+  Lightbulb,
+  Calendar,
+  Plus,
+  Menu as MenuIcon,
+  ClipboardList,
+  Users,
+  Save,
+  Trash2,
+  LogOut,
+  CircleCheckBig as CheckCircle2
+} from 'lucide-react-native';
 
 // --- Constants & Config ---
 const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
@@ -150,11 +125,12 @@ export default function HomeScreen() {
 
   // Trivia Loop
   useEffect(() => {
+    if (view !== 'home') return;
     const timer = setInterval(() => {
       setCurrentTrivia((prev) => (prev + 1) % TRIVIA_DATA.length);
     }, 8000);
     return () => clearInterval(timer);
-  }, []);
+  }, [view]);
 
   // Handlers
   const handleCompatibilityCheck = async () => {
@@ -212,26 +188,31 @@ export default function HomeScreen() {
     setIsAnalyzing(true);
 
     try {
-      const formData = new FormData();
-      const filename = imageUri.split('/').pop() || 'photo.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
-
-      // @ts-ignore: FormData type fix for React Native
-      formData.append('file', { uri: imageUri, name: filename, type });
-
-      // @ts-ignore
-      const response = await axios.post(API_URL, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        timeout: 30000, // 30 sn zaman aşımı
+      // 1. Dosyayı Base64'e çevir
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: 'base64',
       });
 
-      if (response.data && response.data.analysis) {
+      // 2. JSON olarak gönder (Backend böyle bekliyor)
+      const payload = {
+        image: `data:image/jpeg;base64,${base64}`,
+        userData: {
+          ownerName: "Pati Sever",
+          living: "Apartman Dairesi" // Bu verileri kullanıcıdan veya profilden alabiliriz
+        }
+      };
+
+      const response = await axios.post(API_URL, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 60000, // 60 sn (Base64 işlemi uzun sürebilir)
+      });
+
+      if (response.data && response.data.advice) {
         setAiResponse({
-          title: "Biyometrik Analiz Raporu",
-          content: response.data.analysis
+          title: `Analiz: ${response.data.breed || 'Bilinmiyor'}`,
+          content: response.data.advice
         });
         setView('result');
       } else {
@@ -240,7 +221,8 @@ export default function HomeScreen() {
 
     } catch (error: any) {
       console.error("Analiz Hatası:", error);
-      Alert.alert('Bağlantı Hatası', 'Sunucuya bağlanılamadı. Lütfen sunucunun açık olduğundan emin olun.');
+      const errorMessage = error.response ? `Sunucu Hatası: ${error.response.status}` : error.message;
+      Alert.alert('Bağlantı Hatası', `Sunucuya bağlanılamadı.\nDetay: ${errorMessage}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -330,7 +312,11 @@ export default function HomeScreen() {
 
       {/* --- CONTENT --- */}
       <View style={styles.mainContent}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          key={view}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+        >
 
           {/* HOME VIEW */}
           {view === 'home' && (

@@ -12,8 +12,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 # ================================ CONFIG ================================= #
-API_KEY = "AIzaSyBBYqOX_7fyedm2Yj8MoN6jBeKbOhUCvPM"
-IMAGE_DIR = r"C:\Users\SARA\OneDrive - Manisa Celal Bayar Üniversitesi\Masaüstü\Pawmate\data\archive (1)\images"
+API_KEY = "AIzaSyCJVOJP-qFbEvBsNr0OreQer_j8kftZWOk"
+IMAGE_DIR = r"c:\Pawmate\data\archive (1)\images"
 # Sırayla deneyecek model listesi (en hızlıdan başlayarak)
 MODEL_NAMES = [
     "models/gemini-2.5-flash",           # En hızlı ve yeni
