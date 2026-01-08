@@ -1,0 +1,7 @@
+ROUTE HATA: [WinError 32] Dosya baþka bir iþlem tarafýndan kullanýldýðýndan bu iþlem dosyaya eriþemiyor: 'temp_upload.jpg'
+Traceback (most recent call last):
+  File "C:\Pawmate\backend\main.py", line 263, in analyze
+    os.remove(temp_filename)
+    ~~~~~~~~~^^^^^^^^^^^^^^^
+PermissionError: [WinError 32] Dosya baþka bir iþlem tarafýndan kullanýldýðýndan bu iþlem dosyaya eriþemiyor: 'temp_upload.jpg'
+

@@ -8,11 +8,15 @@ from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 import google.generativeai as genai
+import PIL.Image
+import json
+import re
+import traceback
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 # ================================ CONFIG ================================= #
-API_KEY = "AIzaSyCJVOJP-qFbEvBsNr0OreQer_j8kftZWOk"
+API_KEY = "AIzaSyDY9Cqc35Fob_hfKJgb5Ir4nCXW1h2jx04"
 IMAGE_DIR = r"c:\Pawmate\data\archive (1)\images"
 # Sırayla deneyecek model listesi (en hızlıdan başlayarak)
 MODEL_NAMES = [
@@ -130,11 +134,80 @@ def build_prompt(breed, is_cat, user_data):
 
 # ============================= TAHMİN FONKSİYONU ========================== #
 def predict_breed_process(temp_img_path, user_data):
-    # 1. Gelen resmin özelliklerini çıkar
+    # ---------------------------------------------------------
+    # 1. ÖNCELİK: GEMINI (Görsel Zeka)
+    # ---------------------------------------------------------
+    if llm_available and working_model:
+        max_retries = 3
+        retry_delay = 2 # saniye
+
+        for attempt in range(max_retries):
+            try:
+                print(f"🤖 Gemini Vision analizi başlıyor... ({working_model}) - Deneme {attempt + 1}")
+                img_pil = PIL.Image.open(temp_img_path)
+                
+                model = genai.GenerativeModel(working_model)
+                
+                prompt = f"""
+                Bu resmi analiz et. Hayvanın türünü (kedi/köpek) ve ırkını tespit et.
+                Ayrıca sahibinin adı "{user_data.get('ownerName', 'Kullanıcı')}" ve yaşam alanı "{user_data.get('living', 'bilinmiyor')}".
+                
+                Lütfen yanıtı SADECE aşağıdaki JSON formatında ver:
+                {{
+                    "breed": "Irk Adı (Örn: Russian Blue)",
+                    "animalType": "cat" veya "dog",
+                    "confidence": 0.95,
+                    "advice": "Veteriner uzmanı olarak hazırladığın Türkçe, samimi ve detaylı öneri metni."
+                }}
+                """
+                
+                response = model.generate_content([img_pil, prompt])
+                text_response = response.text
+                
+                # Regex ile JSON bulma (daha güvenli)
+                match = re.search(r'\{.*\}', text_response, re.DOTALL)
+                img_pil.close() # Dosyayı serbest bırak
+
+                if match:
+                    json_str = match.group(0)
+                    result_json = json.loads(json_str)
+                    
+                    print(f"✅ Gemini Başarılı (Retry ve Regex ile): {result_json.get('breed')}")
+                    
+                    return (
+                        result_json.get("breed", "Bilinmiyor"),
+                        float(result_json.get("confidence", 0.9)),
+                        result_json.get("animalType") == "cat",
+                        result_json.get("advice", "Öneri oluşturulamadı.")
+                    )
+                else:
+                    raise ValueError("JSON bulunamadı")
+                
+            except Exception as e:
+                error_str = str(e)
+                print(f"⚠ Gemini Vision hatası (Deneme {attempt + 1}): {error_str}")
+                
+                # Eğer kota hatasıysa (429) bekle ve tekrar dene
+                if "429" in error_str or "quota" in error_str.lower():
+                    print(f"⏳ Kota limiti aşıldı, {retry_delay} saniye bekleniyor...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2 # Exponential backoff (2, 4, 8...)
+                else:
+                    # Başka bir hataysa günlüğe yaz ve devam et (belki geçici sunucu hatasıdır)
+                    with open("gemini_error.log", "a") as f:
+                        f.write(f"Attempt {attempt+1}: {error_str}\n")
+        
+        # Döngü biterse buraya düşer -> Logla ve fallback yap
+        print("❌ Tüm denemeler başarısız oldu. Yedek modele geçiliyor.")
+
+    # ---------------------------------------------------------
+    # 2. YEDEK: MOBILE NET CNN (Eski Yöntem)
+    # ---------------------------------------------------------
+    print("running Fallback CNN...")
     target_features = extract_features(temp_img_path)
     
     search_set = list(feature_db.keys())
-    # Speed mode kontrolü (Senin orijinal kodundan)
+    # Speed mode kontrolü
     if TEST_SPEED_MODE:
          search_set = random.sample(search_set, min(TEST_SAMPLE_SIZE, len(search_set)))
 
@@ -142,7 +215,7 @@ def predict_breed_process(temp_img_path, user_data):
     min_dist = float('inf')
     
     if not search_set:
-        return "Bilinmiyor", 0.0, False, "Dataset verisi yok."
+        return "Bilinmiyor", 0.0, False, "Dataset verisi yok ve LLM başarısız."
 
     for img_path in search_set:
         db_features = feature_db[img_path]
@@ -154,16 +227,9 @@ def predict_breed_process(temp_img_path, user_data):
     confidence = max(0.01, 1 - min_dist / 12)
     is_cat = best_breed in cat_breeds
     
-    advice = "Yapay zeka önerisi hazırlanamadı."
-    
-    # LLM Tahmin
-    if llm_available and working_model:
-        try:
-            model = genai.GenerativeModel(working_model)
-            response = model.generate_content(build_prompt(best_breed, is_cat, user_data))
-            advice = response.text
-        except Exception as e:
-            advice = f"LLM hatası: {str(e)}"
+    # LLM sadece metin için tekrar deneniyor (Resim analizi başarısız olsa bile advice üretebilir mi? Zor, context yok)
+    # Basit advice
+    advice = f"Sistem şu an görsel zekaya erişemediği için görsel benzerlik analizi yapıldı. Tahmin: {best_breed}"
             
     return best_breed, confidence, is_cat, advice
 
@@ -206,8 +272,11 @@ def analyze():
         })
 
     except Exception as e:
-        print("HATA:", e)
-        return jsonify({"error": str(e)}), 500
+        error_msg = str(e)
+        print("HATA:", error_msg)
+        with open("backend_error.log", "a") as f:
+            f.write(f"ROUTE HATA: {error_msg}\n{traceback.format_exc()}\n")
+        return jsonify({"error": error_msg}), 500
 
 # 👇 EN ÖNEMLİ EKSİK PARÇA BUYDU 👇
 if __name__ == "__main__":
