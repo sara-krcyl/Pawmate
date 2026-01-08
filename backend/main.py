@@ -21,12 +21,12 @@ MODEL_NAMES = [
     "models/gemini-flash-latest",        # Genel alias
 ]
 FEATURE_CACHE_FILE = "feature_cache_64.npy" # Dosya adını sabitledim
-TEST_SPEED_MODE = False  # 🔥 Tüm görselleri kullan (en doğru)
+TEST_SPEED_MODE = False  #  Tüm görselleri kullan 
 TEST_SAMPLE_SIZE = 200   # Speed mode açıksa kullanılır
 TEST_FEATURE_SIZE = 64
 # =========================================================================== #
 
-print("\n🔧 Başlatılıyor...\n")
+print("\nBaşlatılıyor...\n")
 
 # ============================= GEMINI CONFIG ============================== #
 llm_available = False

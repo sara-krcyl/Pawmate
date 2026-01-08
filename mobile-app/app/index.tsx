@@ -1,503 +1,322 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    View,
-    TextInput,
-    TouchableOpacity,
-    KeyboardAvoidingView,
-    Platform,
-    Alert,
-    Modal,
-    ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from "react-native";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  ChevronLeft,
+} from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { AuthService } from "../utils/auth";
 
-import { AuthService } from '../utils/auth';
+export default function Index() {
+  const router = useRouter();
 
-export default function LoginScreen() {
-    const router = useRouter();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
 
-    // Modal durumları
-    const [forgotModalVisible, setForgotModalVisible] = useState(false);
-    const [signupModalVisible, setSignupModalVisible] = useState(false);
-    const [gender, setGender] = useState('Kadın');
+  // LOGIN
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-    // Kayıt Formu State'leri
-    const [signupFirstName, setSignupFirstName] = useState('');
-    const [signupSurname, setSignupSurname] = useState('');
-    const [signupEmail, setSignupEmail] = useState('');
-    const [signupPassword, setSignupPassword] = useState('');
+  // SIGNUP
+  const [firstName, setFirstName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [gender, setGender] = useState<
+    "Kadın" | "Erkek" | "Belirtmek İstemiyorum"
+  >("Belirtmek İstemiyorum");
 
-    // Şifremi Unuttum State
-    const [forgotEmail, setForgotEmail] = useState('');
+  /* ---------------- LOGIN ---------------- */
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Hata", "E-posta ve şifre giriniz.");
+      return;
+    }
 
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Hata', 'Lütfen e-posta ve şifrenizi girin.');
-            return;
-        }
+    setLoading(true);
+    const res = await AuthService.login(email, password);
+    setLoading(false);
 
-        if (!isValidEmail(email)) {
-            Alert.alert('Geçersiz E-posta', 'Lütfen geçerli bir e-posta adresi girin.');
-            return;
-        }
+    if (res.success) {
+      router.replace("/home");
+    } else {
+      Alert.alert("Giriş Başarısız", res.message);
+    }
+  };
 
-        setLoading(true);
-        // Gerçek giriş işlemi
-        try {
-            const result = await AuthService.login(email, password);
-            setLoading(false);
+  /* ---------------- SIGNUP ---------------- */
+  const handleSignup = async () => {
+    if (!firstName || !surname || !email || !password) {
+      Alert.alert("Eksik Bilgi", "Lütfen tüm alanları doldurun.");
+      return;
+    }
 
-            if (result.success) {
-                // Başarılı giriş sonrası Home sayfasına yönlendir
-                router.replace('/home');
-            } else {
-                Alert.alert('Giriş Başarısız', result.message);
-            }
-        } catch (error) {
-            setLoading(false);
-            Alert.alert('Hata', 'Bir hata oluştu.');
-        }
-    };
+    setLoading(true);
+    const res = await AuthService.register({
+      firstName,
+      surname,
+      email,
+      password,
+      gender,
+    });
+    setLoading(false);
 
-    const handleForgotPassword = async () => {
-        if (!forgotEmail) {
-            Alert.alert('Hata', 'Lütfen e-posta adresinizi girin.');
-            return;
-        }
-        if (!isValidEmail(forgotEmail)) {
-            Alert.alert('Geçersiz E-posta', 'Lütfen geçerli bir e-posta adresi girin.');
-            return;
-        }
+    if (res.success) {
+      Alert.alert("Kayıt Başarılı", res.message);
+      setMode("login");
+      setFirstName("");
+      setSurname("");
+      setEmail("");
+      setPassword("");
+    } else {
+      Alert.alert("Hata", res.message);
+    }
+  };
 
-        const result = await AuthService.resetPassword(forgotEmail);
+  const inputStyle = (name: string) => [
+    styles.inputWrapper,
+    focused === name && styles.inputFocused,
+  ];
 
-        if (result.success) {
-            Alert.alert("Şifre Sıfırlama", result.message);
-            setForgotModalVisible(false);
-            setForgotEmail('');
-        } else {
-            Alert.alert("Hata", result.message);
-        }
-    };
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={{ flex: 1, backgroundColor: colors.bg }}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* LOGO */}
+        <View style={styles.logoBox}>
+          <Text style={styles.logo}>🐾</Text>
+        </View>
 
-    const isValidEmail = (email: string) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
+        <Text style={styles.title}>PAWMATE</Text>
+        <Text style={styles.subtitle}>
+          {mode === "login"
+            ? "Dostunuzun dünyasına giriş yapın"
+            : "Pawmate ailesine katılın"}
+        </Text>
 
-    const isValidPassword = (password: string) => {
-        if (password.length < 6) return false;
-        if (!/\d/.test(password)) return false;
-        return true;
-    };
+        {/* FORM */}
+        <View style={styles.card}>
+          {mode === "signup" && (
+            <>
+              <View style={inputStyle("firstName")}>
+                <User size={20} color={colors.primary} />
+                <TextInput
+                  placeholder="Ad"
+                  placeholderTextColor="#8E8E8E"
+                  style={styles.input}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  onFocus={() => setFocused("firstName")}
+                  onBlur={() => setFocused(null)}
+                />
+              </View>
 
-    const handleSignup = async () => {
-        if (!signupFirstName || !signupSurname || !signupEmail || !signupPassword) {
-            Alert.alert('Eksik Bilgi', 'Lütfen tüm alanları doldurun.');
-            return;
-        }
+              <View style={inputStyle("surname")}>
+                <User size={20} color={colors.primary} />
+                <TextInput
+                  placeholder="Soyad"
+                  placeholderTextColor="#8E8E8E"
+                  style={styles.input}
+                  value={surname}
+                  onChangeText={setSurname}
+                  onFocus={() => setFocused("surname")}
+                  onBlur={() => setFocused(null)}
+                />
+              </View>
+            </>
+          )}
 
-        if (!isValidEmail(signupEmail)) {
-            Alert.alert('Geçersiz E-posta', 'Lütfen geçerli bir e-posta adresi girin (örn: isim@site.com).');
-            return;
-        }
+          <View style={inputStyle("email")}>
+            <Mail size={20} color={colors.primary} />
+            <TextInput
+              placeholder="E-posta"
+              placeholderTextColor="#8E8E8E"
+              style={styles.input}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+              onFocus={() => setFocused("email")}
+              onBlur={() => setFocused(null)}
+            />
+          </View>
 
-        if (!isValidPassword(signupPassword)) {
-            Alert.alert('Zayıf Şifre', 'Şifreniz en az 6 karakter olmalı ve en az 1 rakam içermelidir.');
-            return;
-        }
+          <View style={inputStyle("password")}>
+            <Lock size={20} color={colors.primary} />
+            <TextInput
+              placeholder="Şifre"
+              placeholderTextColor="#8E8E8E"
+              style={styles.input}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              onFocus={() => setFocused("password")}
+              onBlur={() => setFocused(null)}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              {showPassword ? (
+                <EyeOff size={20} color={colors.primary} />
+              ) : (
+                <Eye size={20} color={colors.primary} />
+              )}
+            </TouchableOpacity>
+          </View>
 
-        const newUser = {
-            firstName: signupFirstName,
-            surname: signupSurname,
-            email: signupEmail,
-            password: signupPassword,
-            gender: gender
-        };
+          <TouchableOpacity
+            style={styles.mainButton}
+            onPress={mode === "login" ? handleLogin : handleSignup}
+            disabled={loading}
+          >
+            <Text style={styles.mainButtonText}>
+              {loading
+                ? "İşlem Sürüyor..."
+                : mode === "login"
+                ? "GİRİŞ YAP"
+                : "KAYIT OL"}
+            </Text>
+          </TouchableOpacity>
 
-        const result = await AuthService.register(newUser);
+          <TouchableOpacity
+            onPress={() => setMode(mode === "login" ? "signup" : "login")}
+          >
+            <Text style={styles.switchText}>
+              {mode === "login"
+                ? "Hesabınız yok mu? Kayıt Ol"
+                : "Zaten hesabınız var mı? Giriş Yap"}
+            </Text>
+          </TouchableOpacity>
 
-        if (result.success) {
-            Alert.alert("Kayıt Başarılı", result.message);
-            setSignupModalVisible(false);
-            // Formu temizle
-            setSignupFirstName('');
-            setSignupSurname('');
-            setSignupEmail('');
-            setSignupPassword('');
-            setGender('Kadın');
-        } else {
-            Alert.alert("Kayıt Başarısız", result.message);
-        }
-    };
-
-    return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <StatusBar style="dark" />
-            <ScrollView
-                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+          {mode === "signup" && (
+            <TouchableOpacity
+              onPress={() => setMode("login")}
+              style={styles.backButton}
             >
-                <View style={styles.headerContainer}>
-                    <Text style={styles.appName}>🐾 Pawmate</Text>
-                    <Text style={styles.tagline}>Dostlarınızı daha iyi tanıyın</Text>
-                </View>
-
-                <View style={styles.formContainer}>
-                    <Text style={styles.welcomeText}>Hoş Geldiniz!</Text>
-                    <Text style={styles.subText}>Devam etmek için giriş yapın</Text>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>E-Posta</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="ornek@email.com"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Şifre</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="******"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                        />
-                    </View>
-
-                    <TouchableOpacity style={styles.forgotButton} onPress={() => setForgotModalVisible(true)}>
-                        <Text style={styles.forgotText}>Şifremi Unuttum?</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.loginButton}
-                        onPress={handleLogin}
-                        disabled={loading}
-                    >
-                        <Text style={styles.loginButtonText}>
-                            {loading ? 'Giriş Yapılıyor...' : 'GİRİŞ YAP'}
-                        </Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.signupContainer}>
-                        <Text style={styles.signupText}>Hesabınız yok mu? </Text>
-                        <TouchableOpacity onPress={() => setSignupModalVisible(true)}>
-                            <Text style={styles.signupLink}>Kayıt Ol</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
-
-            {/* Şifremi Unuttum Modal */}
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={forgotModalVisible}
-                onRequestClose={() => setForgotModalVisible(false)}
-            >
-                <View style={styles.modalView}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Şifremi Unuttum</Text>
-                        <Text style={styles.modalText}>E-posta adresinizi girin, size sıfırlama linki gönderelim.</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="E-posta"
-                            value={forgotEmail}
-                            onChangeText={setForgotEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                        />
-                        <TouchableOpacity style={styles.loginButton} onPress={handleForgotPassword}>
-                            <Text style={styles.loginButtonText}>GÖNDER</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setForgotModalVisible(false)}>
-                            <Text style={styles.cancelText}>İptal</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Kayıt Ol Modal */}
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={signupModalVisible}
-                onRequestClose={() => setSignupModalVisible(false)}
-            >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    style={styles.modalView}
-                >
-                    <View style={styles.modalContent}>
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            <Text style={styles.modalTitle}>Kayıt Ol</Text>
-                            <Text style={styles.subText}>Aramıza katılmak için formu doldurun</Text>
-
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
-                                    <Text style={styles.inputLabel}>Ad</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Örn: Ali"
-                                        value={signupFirstName}
-                                        onChangeText={setSignupFirstName}
-                                    />
-                                </View>
-                                <View style={[styles.inputContainer, { flex: 1 }]}>
-                                    <Text style={styles.inputLabel}>Soyad</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="Örn: Yılmaz"
-                                        value={signupSurname}
-                                        onChangeText={setSignupSurname}
-                                    />
-                                </View>
-                            </View>
-
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.inputLabel}>Cinsiyet</Text>
-                                <View style={styles.genderContainer}>
-                                    {['Kadın', 'Erkek', 'Belirtmek İstemiyorum'].map((item) => (
-                                        <TouchableOpacity
-                                            key={item}
-                                            style={[
-                                                styles.genderButton,
-                                                gender === item && styles.genderButtonSelected
-                                            ]}
-                                            onPress={() => setGender(item)}
-                                        >
-                                            <Text style={[
-                                                styles.genderText,
-                                                gender === item && styles.genderTextSelected
-                                            ]}>
-                                                {item}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </View>
-
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.inputLabel}>E-Posta</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="ornek@email.com"
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    value={signupEmail}
-                                    onChangeText={setSignupEmail}
-                                />
-                            </View>
-
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.inputLabel}>Şifre</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="******"
-                                    secureTextEntry
-                                    value={signupPassword}
-                                    onChangeText={setSignupPassword}
-                                />
-                            </View>
-
-                            <TouchableOpacity style={styles.loginButton} onPress={handleSignup}>
-                                <Text style={styles.loginButtonText}>KAYIT OL</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={() => setSignupModalVisible(false)} style={{ padding: 10, alignSelf: 'center' }}>
-                                <Text style={styles.cancelText}>İptal</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
-                </KeyboardAvoidingView>
-            </Modal>
-
-        </KeyboardAvoidingView>
-    );
+              <ChevronLeft size={18} color={colors.textMuted} />
+              <Text style={styles.backText}>Geri</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
 }
 
+/* ---------------- THEME ---------------- */
+
+const colors = {
+  primary: "#7C5135",
+  bg: "#FAF7F2",
+  textMain: "#2D241E",
+  textMuted: "#8D8178",
+};
+
+/* ---------------- STYLES ---------------- */
+
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#e8f5e9',
-        justifyContent: 'center',
-    },
-    headerContainer: {
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    appName: {
-        fontSize: 42,
-        fontWeight: 'bold',
-        color: '#2E7D32',
-        marginBottom: 5,
-    },
-    tagline: {
-        fontSize: 16,
-        color: '#388e3c',
-        opacity: 0.8,
-    },
-    formContainer: {
-        backgroundColor: '#fff',
-        marginHorizontal: 20,
-        padding: 30,
-        borderRadius: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 10,
-    },
-    welcomeText: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1B5E20',
-        textAlign: 'center',
-        marginBottom: 5,
-    },
-    subText: {
-        fontSize: 14,
-        color: '#666',
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-    inputContainer: {
-        marginBottom: 20,
-    },
-    inputLabel: {
-        fontSize: 14,
-        color: '#333',
-        marginBottom: 8,
-        fontWeight: '600',
-    },
-    input: {
-        backgroundColor: '#f9f9f9',
-        padding: 15,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#eee',
-        fontSize: 16,
-        color: '#333',
-        marginBottom: 10,
-        width: '100%'
-    },
-    forgotButton: {
-        alignSelf: 'flex-end',
-        marginBottom: 30,
-    },
-    forgotText: {
-        color: '#2E7D32',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    loginButton: {
-        backgroundColor: '#2E7D32',
-        padding: 18,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginBottom: 20,
-        shadowColor: '#2E7D32',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-        width: '100%'
-    },
-    loginButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-    },
-    signupContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-    },
-    signupText: {
-        color: '#666',
-        fontSize: 14,
-    },
-    signupLink: {
-        color: '#2E7D32',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    modalView: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalContent: {
-        width: '85%',
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 35,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        color: '#2E7D32'
-    },
-    modalText: {
-        marginBottom: 15,
-        textAlign: 'center',
-        color: '#666'
-    },
-    cancelText: {
-        color: '#999',
-        marginTop: 10,
-        fontWeight: '600'
-    },
-    genderContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 10
-    },
-    genderButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        backgroundColor: '#f0f0f0',
-        borderWidth: 1,
-        borderColor: 'transparent'
-    },
-    genderButtonSelected: {
-        backgroundColor: '#e8f5e9',
-        borderColor: '#2E7D32'
-    },
-    genderText: {
-        color: '#666',
-        fontSize: 13
-    },
-    genderTextSelected: {
-        color: '#2E7D32',
-        fontWeight: 'bold'
-    }
+  container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  logoBox: {
+    alignSelf: "center",
+    backgroundColor: colors.primary,
+    width: 80,
+    height: 80,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  logo: {
+    fontSize: 40,
+    color: "white",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "900",
+    textAlign: "center",
+    color: colors.textMain,
+  },
+  subtitle: {
+    textAlign: "center",
+    color: colors.textMuted,
+    marginBottom: 32,
+  },
+  card: {
+    backgroundColor: "white",
+    borderRadius: 28,
+    padding: 24,
+    elevation: 8,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#E2DDD8",
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textMain,
+  },
+  mainButton: {
+    backgroundColor: "#1F1F1F",
+    paddingVertical: 18,
+    borderRadius: 24,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  mainButtonText: {
+    color: "white",
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  switchText: {
+    marginTop: 20,
+    textAlign: "center",
+    fontWeight: "600",
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  backButton: {
+    marginTop: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+  },
+  backText: {
+    color: colors.textMuted,
+    fontWeight: "600",
+  },
 });
